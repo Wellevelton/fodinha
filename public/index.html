@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Cartas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen">
+
+  <div class="text-center">
+    <h1 class="text-4xl font-bold mb-8">Jogo de Cartas Online</h1>
+    
+    <div id="entrar" class="mt-4">
+      <input id="nomeJogador" class="border border-gray-400 p-2 rounded" type="text" placeholder="Seu nome">
+      <button id="entrarJogo" class="bg-blue-600 text-white px-4 py-2 rounded ml-2">Entrar no Jogo</button>
+    </div>
+
+    <div id="jogo" class="hidden mt-8">
+      <div id="jogadores" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+
+      <div class="mt-6">
+        <input id="previsao" class="border border-gray-400 p-2 rounded" type="number" placeholder="Previsão de vitórias">
+        <button id="enviarPrevisao" class="bg-green-500 text-white px-4 py-2 rounded ml-2">Enviar Previsão</button>
+      </div>
+    </div>
+
+    <div id="mensagemErro" class="hidden mt-4 text-red-600"></div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    const nomeJogador = document.getElementById('nomeJogador');
+    const entrarJogo = document.getElementById('entrarJogo');
+    const previsaoInput = document.getElementById('previsao');
+    const enviarPrevisao = document.getElementById('enviarPrevisao');
+    const jogadoresDiv = document.getElementById('jogadores');
+    const jogoDiv = document.getElementById('jogo');
+    const mensagemErro = document.getElementById('mensagemErro');
+
+    entrarJogo.addEventListener('click', () => {
+      const nome = nomeJogador.value;
+      if (nome) {
+        socket.emit('entrarJogo', nome);
+      }
+    });
+
+    socket.on('erro', (msg) => {
+      mensagemErro.textContent = msg;
+      mensagemErro.classList.remove('hidden');
+    });
+
+    socket.on('iniciarJogo', (jogadores) => {
+      document.getElementById('entrar').classList.add('hidden');
+      jogoDiv.classList.remove('hidden');
+
+      jogadoresDiv.innerHTML = '';
+      jogadores.forEach(jogador => {
+        const jogadorDiv = document.createElement('div');
+        jogadorDiv.classList.add('bg-white', 'p-4', 'rounded', 'shadow-lg');
+
+        const nomeH2 = document.createElement('h2');
+        nomeH2.classList.add('text-xl', 'font-bold');
+        nomeH2.textContent = jogador.nome;
+        jogadorDiv.appendChild(nomeH2);
+
+        const cartasDiv = document.createElement('div');
+        cartasDiv.classList.add('flex', 'justify-center', 'mt-4');
+        jogador.cartas.forEach(carta => {
+          const cartaImg = document.createElement('img');
+          cartaImg.src = `assets/cards/${carta.naipe}${carta.valor}.png`;
+          cartaImg.classList.add('h-16', 'w-12', 'mr-2');
+          cartasDiv.appendChild(cartaImg);
+        });
+
+        jogadorDiv.appendChild(cartasDiv);
+        jogadoresDiv.appendChild(jogadorDiv);
+      });
+    });
+
+    enviarPrevisao.addEventListener('click', () => {
+      const previsao = Number(previsaoInput.value);
+      socket.emit('fazerPrevisao', previsao);
+    });
+  </script>
+
+</body>
+</html>
